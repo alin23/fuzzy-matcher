@@ -1,3 +1,6 @@
+[lib]
+crate-type = ["staticlib"]
+
 [package]
 name = "fuzzy-matcher"
 version = "0.3.7"
@@ -10,14 +13,18 @@ readme  = "README.md"
 keywords = ["fuzzy", "match", "text", "search"]
 license = "MIT"
 edition = "2018"
+build = "build.rs"
 
 [features]
 default = []
 compact = []
 
+[build-dependencies]
+swift-bridge-build = "0.1"
 
 [dependencies]
 thread_local = "1.0.0"
+swift-bridge = "0.1"
 
 [dev-dependencies]
 termion = "1.5.1"

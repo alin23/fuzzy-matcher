@@ -1,3 +1,4 @@
+use crate::skim::SkimMatcherV2;
 use crate::{FuzzyMatcher, IndexType, ScoreType};
 
 pub fn cheap_matches(
@@ -106,6 +107,25 @@ pub fn assert_order(matcher: &dyn FuzzyMatcher, pattern: &str, choices: &[&'stat
     }
 
     assert_eq!(result, choices);
+}
+
+#[allow(dead_code)]
+pub fn fuzzy_find(pattern: &str, lines: &str) -> Option<String> {
+    sorted_fuzzy_matches(pattern, lines.split('§').collect()).first().cloned()
+}
+
+#[allow(dead_code)]
+pub fn sorted_fuzzy_matches(pattern: &str, lines: Vec<&str>) -> Vec<String> {
+    let matcher = SkimMatcherV2::default().ignore_case();
+    let mut lines_with_score: Vec<(ScoreType, &&str)> = lines
+        .iter()
+        .filter_map(|s| matcher.fuzzy_match(&s, pattern).map(|score| (score, s)))
+        .collect();
+    lines_with_score.sort_by_key(|(score, _)| -score);
+    lines_with_score
+        .into_iter()
+        .map(|(_, string)| string.to_string())
+        .collect()
 }
 
 #[allow(dead_code)]

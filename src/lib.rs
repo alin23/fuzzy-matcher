@@ -2,6 +2,15 @@ pub mod clangd;
 pub mod skim;
 mod util;
 
+use util::fuzzy_find;
+
+#[swift_bridge::bridge]
+mod ffi {
+    extern "Rust" {
+        pub fn fuzzy_find(pattern: &str, lines: &str) -> Option<String>;
+    }
+}
+
 #[cfg(not(feature = "compact"))]
 type IndexType = usize;
 #[cfg(not(feature = "compact"))]
