@@ -111,7 +111,48 @@ pub fn assert_order(matcher: &dyn FuzzyMatcher, pattern: &str, choices: &[&'stat
 
 #[allow(dead_code)]
 pub fn fuzzy_find(pattern: &str, lines: &str) -> Option<String> {
-    sorted_fuzzy_matches(pattern, lines.split('§').collect()).first().cloned()
+    sorted_fuzzy_matches(pattern, lines.split('\x01').collect())
+        .first()
+        .cloned()
+}
+
+#[allow(dead_code)]
+pub fn fuzzy_find_all(pattern: &str, lines: &str) -> Vec<String> {
+    sorted_fuzzy_matches(pattern, lines.split('\x01').collect())
+}
+
+#[allow(dead_code)]
+pub fn fuzzy_indices(pattern: &str, lines: &str) -> Vec<String> {
+    sorted_fuzzy_indices(pattern, lines.split('\x01').collect())
+        .iter()
+        .map(|(string, indices)| {
+            string.to_owned()
+                + "\x01"
+                + &indices
+                    .iter()
+                    .map(|i| i.to_string())
+                    .collect::<Vec<String>>()
+                    .join("\x02")
+        })
+        .collect()
+}
+
+#[allow(dead_code)]
+pub fn sorted_fuzzy_indices(pattern: &str, lines: Vec<&str>) -> Vec<(String, Vec<IndexType>)> {
+    let matcher = SkimMatcherV2::default().ignore_case();
+    let mut lines_with_score: Vec<(ScoreType, &&str, Vec<IndexType>)> = lines
+        .iter()
+        .filter_map(|s| {
+            matcher
+                .fuzzy_indices(&s, pattern)
+                .map(|(score, indices)| (score, s, indices))
+        })
+        .collect();
+    lines_with_score.sort_by_key(|(score, _, _)| -score);
+    lines_with_score
+        .into_iter()
+        .map(|(_, string, indices)| (string.to_string(), indices))
+        .collect()
 }
 
 #[allow(dead_code)]

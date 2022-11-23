@@ -1271,7 +1271,7 @@ mod tests {
         assert_order(&matcher, "ast", &["ast", "AST", "INT_FAST16_MAX"]);
         assert_order(&matcher, "int", &["int", "INT", "PRINT"]);
     }
-    
+
     #[test]
     fn test_reuse_should_not_affect_indices() {
         let matcher = SkimMatcherV2::default();
