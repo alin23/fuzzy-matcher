@@ -12,6 +12,8 @@ export MACOSX_DEPLOYMENT_TARGET=11.0
 # Build the project for the desired platforms:
 cargo build --target x86_64-apple-darwin --release
 cargo build --target aarch64-apple-darwin --release
+cargo build --target aarch64-apple-ios --release
+cargo build --target aarch64-apple-ios-sim --release
 mkdir -p ./target/universal-macos/$1
 
 lipo \
@@ -23,6 +25,8 @@ swift-bridge-cli create-package \
 --bridges-dir ./generated \
 --out-dir FuzzyMatcher \
 --macos target/universal-macos/$1/libfuzzy_matcher.a \
+--simulator target/aarch64-apple-ios-sim/$1/libfuzzy_matcher.a \
+--ios target/aarch64-apple-ios/$1/libfuzzy_matcher.a \
 --name FuzzyMatcher
 
 cp target/universal-macos/$1/libfuzzy_matcher.a FuzzyMatcher/RustXcframework.xcframework/macos-arm64_x86_64/libfuzzy_matcher.a
