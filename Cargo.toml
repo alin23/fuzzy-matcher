@@ -28,3 +28,9 @@ swift-bridge = "0.1"
 
 [dev-dependencies]
 termion = "1.5.1"
+
+[profile.release]
+debug = false
+opt-level = "s"
+strip = true
+lto = true
