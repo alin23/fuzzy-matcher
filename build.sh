@@ -4,9 +4,15 @@
 
 set -e
 
+camelToSnakeCase() {
+    echo "$@" | sed -r 's/([A-Z])/_\1/g' | tr '[:upper:]' '[:lower:]' | sed -r 's/^_//'
+}
+
 THISDIR=$(dirname $0)
 cd $THISDIR
 CONFIGURATION=${1:-release}
+LIBNAME=FuzzyMatcher
+RUSTLIBNAME=$(camelToSnakeCase $LIBNAME)
 
 export SWIFT_BRIDGE_OUT_DIR="$(pwd)/generated"
 export MACOSX_DEPLOYMENT_TARGET=11.0
@@ -18,20 +24,24 @@ cargo build --target aarch64-apple-ios-sim --release
 mkdir -p ./target/universal-macos/$CONFIGURATION
 
 lipo \
-    ./target/aarch64-apple-darwin/$CONFIGURATION/libfuzzy_matcher.a \
-    ./target/x86_64-apple-darwin/$CONFIGURATION/libfuzzy_matcher.a -create -output \
-    ./target/universal-macos/$CONFIGURATION/libfuzzy_matcher.a
+    ./target/aarch64-apple-darwin/$CONFIGURATION/lib$RUSTLIBNAME.a \
+    ./target/x86_64-apple-darwin/$CONFIGURATION/lib$RUSTLIBNAME.a -create -output \
+    ./target/universal-macos/$CONFIGURATION/lib$LIBNAME.a
 
-cp FuzzyMatcher/Sources/FuzzyMatcher/fuzzy-matcher.swift /tmp/fuzzy-matcher.swift
+cp ./target/aarch64-apple-ios-sim/$CONFIGURATION/lib$RUSTLIBNAME.a ./target/aarch64-apple-ios-sim/$CONFIGURATION/lib$LIBNAME.a
+cp ./target/aarch64-apple-ios/$CONFIGURATION/lib$RUSTLIBNAME.a ./target/aarch64-apple-ios/$CONFIGURATION/lib$LIBNAME.a
+
+rm -rf $LIBNAME/$LIBNAME'Rust.xcframework'
 swift-bridge-cli create-package \
 --bridges-dir ./generated \
---out-dir FuzzyMatcher \
---macos target/universal-macos/$CONFIGURATION/libfuzzy_matcher.a \
---simulator target/aarch64-apple-ios-sim/$CONFIGURATION/libfuzzy_matcher.a \
---ios target/aarch64-apple-ios/$CONFIGURATION/libfuzzy_matcher.a \
---name FuzzyMatcher
+--out-dir $LIBNAME \
+--macos target/universal-macos/$CONFIGURATION/lib$LIBNAME.a \
+--simulator ./target/aarch64-apple-ios-sim/$CONFIGURATION/lib$LIBNAME.a \
+--ios ./target/aarch64-apple-ios/$CONFIGURATION/lib$LIBNAME.a \
+--name $LIBNAME
 
-cp target/universal-macos/$CONFIGURATION/libfuzzy_matcher.a FuzzyMatcher/RustXcframework.xcframework/macos-arm64_x86_64/libfuzzy_matcher.a
-mv FuzzyMatcher/RustXcframework.xcframework FuzzyMatcher/FuzzyMatcherRust.xcframework
-sed -i '' 's/RustXcframework/FuzzyMatcherRust/g' FuzzyMatcher/Package.swift
-cp /tmp/fuzzy-matcher.swift FuzzyMatcher/Sources/FuzzyMatcher/fuzzy-matcher.swift
+cp target/universal-macos/$CONFIGURATION/lib$LIBNAME.a $LIBNAME/RustXcframework.xcframework/macos-arm64_x86_64/lib$LIBNAME.a
+mv $LIBNAME/RustXcframework.xcframework $LIBNAME/$LIBNAME'Rust.xcframework'
+cp utils.swift $LIBNAME/Sources/$LIBNAME/
+rg -l RustXcframework $LIBNAME/ | sad --commit RustXcframework $LIBNAME'Rust'
+swiftformat --exclude $LIBNAME/Sources/$LIBNAME/SwiftBridgeCore.swift $LIBNAME
